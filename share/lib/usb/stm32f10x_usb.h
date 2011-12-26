@@ -16,6 +16,11 @@
 #include "stm32f10x_gpio.h"
 #include "usb.h"
 
+#if(!defined USB_PULLUP_PORT || !defined USB_PULLUP_PIN)
+#define USB_PULLUP_PORT GPIOA
+#define USB_PULLUP_PIN GPIO_Pin_9
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

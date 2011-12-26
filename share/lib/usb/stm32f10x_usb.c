@@ -107,17 +107,17 @@ void USB_init(){
 void USB_connect(bool v){
 	USB->CNTR=USB_CNTR_FRES; /* Force USB Reset */
 	USB->ISTR=0; /* Clear Interrupt Status */
-	GPIO_SetBits(GPIOA,GPIO_Pin_9);
+	GPIO_SetBits(USB_PULLUP_PORT,USB_PULLUP_PIN);
 	GPIO_InitTypeDef gpioCfg;
-	gpioCfg.GPIO_Pin=GPIO_Pin_9;
+	gpioCfg.GPIO_Pin=USB_PULLUP_PIN;
 	gpioCfg.GPIO_Speed=GPIO_Speed_50MHz;
 	gpioCfg.GPIO_Mode=GPIO_Mode_IN_FLOATING;
-	GPIO_Init(GPIOA,&gpioCfg);
+	GPIO_Init(USB_PULLUP_PORT,&gpioCfg);
 	if(v){
 		uint16_t i=0;
 		while(--i)__NOP();
 		gpioCfg.GPIO_Mode=GPIO_Mode_Out_PP;
-		GPIO_Init(GPIOA,&gpioCfg);
+		GPIO_Init(USB_PULLUP_PORT,&gpioCfg);
 		USB->CNTR=0; /* USB Reset Interrupt Mask */
 		USB->ISTR=0; /* Clear Interrupt Status */
 		USB->CNTR=USB_CNTR_RESETM; /* USB Reset Interrupt Mask */
