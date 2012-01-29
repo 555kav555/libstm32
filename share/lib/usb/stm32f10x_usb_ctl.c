@@ -18,7 +18,7 @@ void USB_setDescriptor(uint8_t type,uint8_t slot,const uint8_t *data,uint16_t le
 
 void USB_inData(uint8_t num,USB_buffer_t *buf){
 	uint16_t len=buf->length;
-	len=USB_EP_write(num,buf->data,len);
+	len=USB_EP_write(num,buf->data,len,0);
 	buf->data+=len;
 	buf->length-=len;
 	USB_EP_handshake(num,USB_EPR_STAT_TX_VALID|USB_EPR_STAT_RX_STALL);
@@ -26,7 +26,7 @@ void USB_inData(uint8_t num,USB_buffer_t *buf){
 
 uint16_t USB_outData(uint8_t num,USB_buffer_t *buf){
 	uint16_t len=buf->length;
-	len=USB_EP_read(num,buf->data,len);
+	len=USB_EP_read(num,buf->data,len,0);
 	buf->data+=len;
 	buf->length-=len;
 	return len;
@@ -126,7 +126,7 @@ void USB_ctlH(uint8_t num,USB_event_t evt){
 			USB_EP_handshake(0,USB_EPR_STAT_TX_STALL|USB_EPR_STAT_RX_STALL);
 			return;
 		}
-		USB_EP_read(0,(uint8_t*)&USB_control.request,sizeof(USB_request_t));
+		USB_EP_read(0,(uint8_t*)&USB_control.request,sizeof(USB_request_t),0);
 		switch(USB_control.request.bmRequestType.Type){
 		case USB_REQUEST_TYPE_STANDARD:{
 			if(USB_control.request.bmRequestType.Dir){

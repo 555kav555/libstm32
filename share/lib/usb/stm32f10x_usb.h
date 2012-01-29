@@ -193,9 +193,11 @@ extern USB_onConfig_t USB_onConfig;
 #define USB_ON_CONTROL_REQUEST_NUM 4
 extern USB_onControlRequest_t USB_onControlRequest[USB_ON_CONTROL_REQUEST_NUM];
 
+
 uint16_t USB_EP_toRead(uint8_t num);
-uint16_t USB_EP_read(uint8_t num,uint8_t *buf,uint16_t len);
-uint16_t USB_EP_write(uint8_t num,const uint8_t *buf,uint16_t len);
+uint16_t USB_EP_read(uint8_t num,uint8_t *buf,uint16_t len,uint16_t offset);
+uint16_t USB_EP_write(uint8_t num,const uint8_t *buf,uint16_t len,uint16_t offset);
+void USB_EP_writeEmpty(uint8_t num);
 void USB_EP_TXHandshake(uint8_t num,uint16_t flags);
 void USB_EP_RXHandshake(uint8_t num,uint16_t flags);
 void USB_EP_handshake(uint8_t num,uint16_t flags);

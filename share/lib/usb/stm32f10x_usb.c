@@ -17,52 +17,40 @@ USB_BTABLE_entry_t* USB_getBTABLEEntry(uint8_t num){
 	return (USB_BTABLE_entry_t*)(((uint8_t*)USB_PMAAddr)+(USB->BTABLE+(num*8))*2);
 }
 
-/*******************************************************************************
-* Function Name  : UserToPMABufferCopy
-* Description    : Copy a buffer from user memory area to packet memory area (PMA)
-* Input          : - pbUsrBuf: pointer to user memory area.
-*                  - wPMABufAddr: address into PMA.
-*                  - wNBytes: no. of bytes to be copied.
-* Output         : None.
-* Return         : None	.
-*******************************************************************************/
-static void UserToPMABufferCopy(const uint8_t *pbUsrBuf, uint16_t wPMABufAddr, uint16_t wNBytes)
-{
-  uint32_t n = (wNBytes + 1) >> 1;   /* n = (wNBytes + 1) / 2 */
-  uint32_t i, temp1, temp2;
-  uint16_t *pdwVal;
-  pdwVal = (uint16_t *)(wPMABufAddr * 2 + USB_PMAAddr);
-  for (i = n; i != 0; i--)
-  {
-    temp1 = (uint16_t) * pbUsrBuf;
-    pbUsrBuf++;
-    temp2 = temp1 | (uint16_t) * pbUsrBuf << 8;
-    *pdwVal++ = temp2;
-    pdwVal++;
-    pbUsrBuf++;
-  }
+static void UserToPMABufferCopy(const uint8_t *from,uint16_t toPMA,uint16_t len){
+	if(!len)return;
+	uint8_t *to=(uint8_t*)(toPMA*2+USB_PMAAddr);
+	if(toPMA&1){
+		to--;
+		*to=*from;
+		to+=3;
+		from++;
+		len--;
+	}
+	len=(len+1)>>1;
+	for(;len;len--){
+		*(uint16_t*)to=*(uint16_t*)from;
+		to+=4;
+		from+=2;
+	}
 }
 
-/*******************************************************************************
-* Function Name  : PMAToUserBufferCopy
-* Description    : Copy a buffer from user memory area to packet memory area (PMA)
-* Input          : - pbUsrBuf    = pointer to user memory area.
-*                  - wPMABufAddr = address into PMA.
-*                  - wNBytes     = no. of bytes to be copied.
-* Output         : None.
-* Return         : None.
-*******************************************************************************/
-static void PMAToUserBufferCopy(uint8_t *pbUsrBuf, uint16_t wPMABufAddr, uint16_t wNBytes)
-{
-  uint32_t n = (wNBytes + 1) >> 1;/* /2*/
-  uint32_t i;
-  uint32_t *pdwVal;
-  pdwVal = (uint32_t *)(wPMABufAddr * 2 + USB_PMAAddr);
-  for (i = n; i != 0; i--)
-  {
-    *(uint16_t*)pbUsrBuf++ = *pdwVal++;
-    pbUsrBuf++;
-  }
+static void PMAToUserBufferCopy(uint8_t *to,uint16_t fromPMA,uint16_t len){
+	if(!len)return;
+	uint8_t *from=(uint8_t*)(fromPMA*2+USB_PMAAddr);
+	if(fromPMA&1){
+		from--;
+		*to=*from;
+		from+=3;
+		to++;
+		len--;
+	}
+	len=(len+1)>>1;
+	for(;len;len--){
+		*(uint16_t*)to=*(uint16_t*)from;
+		from+=4;
+		to+=2;
+	}
 }
 
 uint16_t USB_EP_toRead(uint8_t num){
@@ -70,21 +58,26 @@ uint16_t USB_EP_toRead(uint8_t num){
 	return e->COUNT_RX&USB_BTABLE_COUNT_RX_COUNTM;
 }
 
-uint16_t USB_EP_read(uint8_t num,uint8_t *buf,uint16_t len){
+uint16_t USB_EP_read(uint8_t num,uint8_t *buf,uint16_t len,uint16_t offset){
 	USB_BTABLE_entry_t *e=USB_getBTABLEEntry(num);
-	uint16_t l=e->COUNT_RX&USB_BTABLE_COUNT_RX_COUNTM;
+	uint16_t l=(e->COUNT_RX&USB_BTABLE_COUNT_RX_COUNTM)-offset;
 	if(l>len)l=len;
-	PMAToUserBufferCopy(buf,e->ADDR_RX,l);
+	PMAToUserBufferCopy(buf,e->ADDR_RX+offset,l);
 	return l;
 }
 
-uint16_t USB_EP_write(uint8_t num,const uint8_t *buf,uint16_t len){
+uint16_t USB_EP_write(uint8_t num,const uint8_t *buf,uint16_t len,uint16_t offset){
 	USB_BTABLE_entry_t *e=USB_getBTABLEEntry(num);
-	uint16_t l=USB_EP[num].size_tx;
+	uint16_t l=USB_EP[num].size_tx-offset;
 	if(l>len)l=len;
-	UserToPMABufferCopy(buf,e->ADDR_TX,l);
-	e->COUNT_TX=l;
+	UserToPMABufferCopy(buf,e->ADDR_TX+offset,l);
+	e->COUNT_TX=l+offset;
 	return l;
+}
+
+void USB_EP_writeEmpty(uint8_t num){
+	USB_BTABLE_entry_t *e=USB_getBTABLEEntry(num);
+	e->COUNT_TX=0;
 }
 
 void USB_deInit(){
