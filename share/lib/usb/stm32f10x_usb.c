@@ -19,36 +19,43 @@ USB_BTABLE_entry_t* USB_getBTABLEEntry(uint8_t num){
 
 static void UserToPMABufferCopy(const uint8_t *from,uint16_t toPMA,uint16_t len){
 	if(!len)return;
-	uint8_t *to=(uint8_t*)(toPMA*2+USB_PMAAddr);
+	uint16_t *to=(uint16_t*)(toPMA*2+USB_PMAAddr);
 	if(toPMA&1){
 		to--;
-		*to=*from;
-		to+=3;
+		uint16_t t=*to;
+		((uint8_t*)&t)[1]=*from;
+		*to=t;
+		to+=2;
 		from++;
 		len--;
 	}
 	len=(len+1)>>1;
 	for(;len;len--){
-		*(uint16_t*)to=*(uint16_t*)from;
-		to+=4;
+		*to=*(uint16_t*)from;
+		to+=2;
 		from+=2;
 	}
 }
 
 static void PMAToUserBufferCopy(uint8_t *to,uint16_t fromPMA,uint16_t len){
 	if(!len)return;
-	uint8_t *from=(uint8_t*)(fromPMA*2+USB_PMAAddr);
+	uint16_t *from=(uint16_t*)(fromPMA*2+USB_PMAAddr);
 	if(fromPMA&1){
 		from--;
-		*to=*from;
-		from+=3;
+		uint16_t t=*from;
+		*to=((uint8_t*)&t)[1];
+		from+=2;
 		to++;
 		len--;
 	}
-	len=(len+1)>>1;
+	if(len&1){
+		uint16_t t=from[len>>1];
+		to[len-1]=(uint8_t)t;
+	}
+	len>>=1;
 	for(;len;len--){
-		*(uint16_t*)to=*(uint16_t*)from;
-		from+=4;
+		*(uint16_t*)to=*from;
+		from+=2;
 		to+=2;
 	}
 }
