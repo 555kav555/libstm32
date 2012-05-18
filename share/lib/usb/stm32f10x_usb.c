@@ -49,7 +49,7 @@ static void PMAToUserBufferCopy(uint8_t *to,uint16_t fromPMA,uint16_t len){
 		len--;
 	}
 	if(len&1){
-		uint16_t t=from[len>>1];
+		uint16_t t=from[len-1];
 		to[len-1]=(uint8_t)t;
 	}
 	len>>=1;
