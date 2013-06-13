@@ -1,5 +1,7 @@
 #include "stm32f10x_usb.h"
 
+uint32_t USB_clock = RCC_USBCLKSource_PLLCLK_1Div5;
+
 USB_EP_t USB_EP[USB_EP_NUM]={
 	{NULL,0,0},
 	{NULL,0,0},
@@ -96,7 +98,7 @@ void USB_deInit(){
 
 void USB_init(){
 	/* Select USBCLK source */
-	RCC_USBCLKConfig(RCC_USBCLKSource_PLLCLK_1Div5);
+	RCC_USBCLKConfig(USB_clock);
 
 	/* Enable the USB clock */
 	RCC_APB1PeriphResetCmd(RCC_APB1Periph_USB, ENABLE);
