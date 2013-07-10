@@ -207,6 +207,11 @@ void USB_EP_handshake(uint8_t num,uint16_t flags);
 uint16_t USB_EP_TXState(uint8_t num);
 uint16_t USB_EP_RXState(uint8_t num);
 
+
+/* Unique device ID as serial number */
+unsigned USB_UIDRegToDescStr(uint8_t *buf, unsigned len, const char *prefix);
+void USB_setStringDescriptorToUIDReg(uint8_t slot, const char *prefix);
+
 #ifdef __cplusplus
 }
 #endif
