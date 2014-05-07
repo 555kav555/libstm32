@@ -1,9 +1,9 @@
 #ifndef __STM32F10x_USB_H
 #define __STM32F10x_USB_H
 
-#define USB_MAXPACKETSIZE0 8 // Windows XP can't recognize the device if packet size equals to 16... Thanks to Microsoft.
+#define USB_MAXPACKETSIZE0 8 // Windows XP can't recognize a device if the packet size equals to 16... Thanks to Microsoft.
 
-#define USB_EP_NUM 8
+#define USB_EP_SLOT_NUM 8
 
 #include <sys/types.h>
 #include <stddef.h>
@@ -21,15 +21,12 @@
 #define USB_PULLUP_PIN GPIO_Pin_9
 #endif
 
+#define USB_RET_ERROR -1
+#define USB_EP_FREESLOT 0xFF
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef enum{
-	USB_EVT_SETUP,
-	USB_EVT_IN,
-	USB_EVT_OUT
-}USB_event_t;
 
 /* Exported constants --------------------------------------------------------*/
 #define USB_RegBase  (APB1PERIPH_BASE+0x5C00)  /* USB_IP Peripheral Registers base address */
@@ -39,7 +36,7 @@ typedef enum{
 /*                         General registers                                  */
 /******************************************************************************/
 
-typedef struct{
+typedef struct {
 	__IO uint32_t EPR[8];
 	uint32_t RESERVED0[8];
 	__IO uint32_t CNTR;
@@ -47,15 +44,15 @@ typedef struct{
 	__IO uint32_t FNR;
 	__IO uint32_t DADDR;
 	__IO uint32_t BTABLE;
-}USB_TypeDef;
+} USB_TypeDef;
 
 /* Endpoint Buffer Descriptor */
-typedef struct{
+typedef struct {
 	__IO uint32_t ADDR_TX;
 	__IO uint32_t COUNT_TX;
 	__IO uint32_t ADDR_RX;
 	__IO uint32_t COUNT_RX;
-}USB_BTABLE_entry_t;
+} USB_BTABLE_entry_t;
 
 #define USB ((USB_TypeDef*)USB_RegBase)
 
@@ -103,29 +100,39 @@ typedef struct{
 
 #define  USB_BTABLE_COUNT_RX_COUNTM             ((uint16_t)0x03FF)            /*!<Reception Byte Count mask */
 
-typedef struct{
+typedef enum {
+	USB_EVT_SETUP,
+	USB_EVT_IN,
+	USB_EVT_OUT
+} USB_event_t;
+
+typedef struct {
 	uint8_t *data;
 	uint16_t length;
-}USB_buffer_t;
+} USB_buffer_t;
 
-typedef void(*USB_EP_H_t)(uint8_t,USB_event_t);
+typedef void(*USB_EP_H_t)(uint8_t ep_slot, USB_event_t evt);
 
-typedef struct{
+typedef struct {
 	USB_EP_H_t handler;
 	uint16_t size_tx;
 	uint16_t size_rx;
-}USB_EP_t;
+} USB_EP_slot_t;
 
-typedef enum{
-	USB_CTL_SETUP,USB_CTL_DATA,USB_CTL_LASTDATA,USB_CTL_EXACTDATA,USB_CTL_STATUS
-}USB_controlState_t;
+typedef enum {
+	USB_CTL_SETUP,
+	USB_CTL_DATA,
+	USB_CTL_LASTDATA,
+	USB_CTL_EXACTDATA,
+	USB_CTL_STATUS
+} USB_controlState_t;
 
-typedef struct{
+typedef struct {
 	USB_buffer_t databuf;
 	USB_request_t request;
 	USB_controlState_t stage;
 	bool done;
-}USB_control_t;
+} USB_control_t;
 
 extern uint32_t USB_clock;
 
@@ -147,36 +154,45 @@ typedef void(*USB_onControlRequest_t)();
 
 extern USB_buffer_t USB_descriptorTable[USB_DESCRIPTOR_TABLE_NUM][USB_DESCRIPTOR_NUM];
 
-typedef void(*USB_onConfig_t)(uint8_t);
+typedef void(*USB_onConfig_t)(uint8_t cfg_num);
 
-extern USB_EP_t USB_EP[USB_EP_NUM];
+extern uint8_t USB_EP_slotNum[16];
+extern USB_EP_slot_t USB_EP_slot[USB_EP_SLOT_NUM];
 
-USB_BTABLE_entry_t* USB_getBTABLEEntry(uint8_t num);
+static inline uint8_t USB_getEPSlotByNum(uint8_t ep_num) {
+	return USB_EP_slotNum[ep_num & 0x0F];
+}
+
+static inline uint8_t USB_getEPNumBySlot(uint8_t ep_slot) {
+	return USB->EPR[ep_slot] & ~USB_EPR_TMASK;
+}
+
+USB_BTABLE_entry_t* USB_getBTABLEEntry(uint8_t ep_slot);
 
 void USB_reset();
 void USB_suspend();
 void USB_resume();
 
 void USB_ctlInit();
-void USB_ctlH(uint8_t,USB_event_t evt);
+void USB_ctlH(uint8_t ep_slot, USB_event_t evt);
 
-void USB_ctl_inStatus(uint8_t num,USB_control_t *control,uint16_t flags);
-void USB_ctl_outStatus(uint8_t num,USB_control_t *control,uint16_t flags);
-void USB_ctl_inProto(uint8_t num,USB_control_t *control);
-void USB_ctl_outProto(uint8_t num,USB_control_t *control);
-void USB_ctl_inData(uint8_t num,USB_control_t *control,const uint8_t *data,uint16_t len);
-void USB_ctl_outData(uint8_t num,USB_control_t *control,uint8_t *data,uint16_t len);
+void USB_ctl_inStatus(uint8_t ep_slot, USB_control_t *control, uint16_t flags);
+void USB_ctl_outStatus(uint8_t ep_slot, USB_control_t *control, uint16_t flags);
+void USB_ctl_inProto(uint8_t ep_slot, USB_control_t *control);
+void USB_ctl_outProto(uint8_t ep_slot, USB_control_t *control);
+void USB_ctl_inData(uint8_t ep_slot, USB_control_t *control, const uint8_t *data, uint16_t len);
+void USB_ctl_outData(uint8_t ep_slot, USB_control_t *control, uint8_t *data, uint16_t len);
 #define USB_ctl_inDataBuf(A,B,C) USB_ctl_inData((A),(B),(C).data,(C).length)
 #define USB_ctl_outDataBuf(A,B,C) USB_ctl_outData((A),(B),(C).data,(C).length)
 
-static inline void USB_CAN_intDeInit(){
-	NVIC_InitTypeDef NVIC_InitStructure; 
+static inline void USB_CAN_intDeInit() {
+	NVIC_InitTypeDef NVIC_InitStructure;
 	NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
 	NVIC_Init(&NVIC_InitStructure);
 }
 
-static inline void USB_CAN_intInit(int pPri,int sPri){
+static inline void USB_CAN_intInit(int pPri, int sPri) {
 	NVIC_InitTypeDef NVIC_InitStructure;
 	NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = pPri;
@@ -188,24 +204,34 @@ static inline void USB_CAN_intInit(int pPri,int sPri){
 void USB_init();
 void USB_LP_Int();
 void USB_connect(bool);
-void USB_setDescriptor(uint8_t type,uint8_t slot,const uint8_t *data,uint16_t len);
-void USB_EP_setup(uint8_t num,uint16_t flags,uint16_t size_tx,uint16_t size_rx,USB_EP_H_t);
+void USB_setDescriptor(uint8_t type, uint8_t slot, const uint8_t *data, uint16_t len);
+void USB_EP_setup(uint8_t ep_slot, uint8_t ep_num, uint16_t flags, uint16_t size_tx, uint16_t size_rx, USB_EP_H_t handler);
 void USB_EP_clearAll();
 extern USB_onConfig_t USB_onConfig;
 #define USB_ON_CONTROL_REQUEST_NUM 4
 extern USB_onControlRequest_t USB_onControlRequest[USB_ON_CONTROL_REQUEST_NUM];
 
 
-uint16_t USB_EP_toRead(uint8_t num);
-uint16_t USB_EP_read(uint8_t num,uint8_t *buf,uint16_t len,uint16_t offset);
-uint16_t USB_EP_write(uint8_t num,const uint8_t *buf,uint16_t len,uint16_t offset);
-void USB_EP_writeEmpty(uint8_t num);
-void USB_EP_TXHandshake(uint8_t num,uint16_t flags);
-void USB_EP_RXHandshake(uint8_t num,uint16_t flags);
-void USB_EP_handshake(uint8_t num,uint16_t flags);
+uint16_t USB_EP_toRead(uint8_t ep_slot);
+uint16_t USB_EP_read(uint8_t ep_slot, uint8_t *buf, uint16_t len, uint16_t offset);
+uint16_t USB_EP_write(uint8_t ep_slot, const uint8_t *buf, uint16_t len, uint16_t offset);
+void USB_EP_writeEmpty(uint8_t ep_slot);
+void USB_EP_setTXState(uint8_t ep_slot, uint16_t flags);
+void USB_EP_setRXState(uint8_t ep_slot, uint16_t flags);
+void USB_EP_setState(uint8_t ep_slot, uint16_t flags);
 
-uint16_t USB_EP_TXState(uint8_t num);
-uint16_t USB_EP_RXState(uint8_t num);
+uint16_t USB_EP_getTXState(uint8_t ep_slot);
+uint16_t USB_EP_getRXState(uint8_t ep_slot);
+
+
+/* Utils */
+int USB_EP_getFreeSlot();
+static inline int USB_EP_addBidir(uint8_t ep_num, uint16_t flags, uint16_t size_tx, uint16_t size_rx, USB_EP_H_t handler) {
+	int r = USB_EP_getFreeSlot();
+	if(r == USB_RET_ERROR) return r;
+	USB_EP_setup(r, ep_num & 0x0F, flags, size_tx, size_rx, handler);
+	return r;
+}
 
 
 /* Unique device ID as serial number */

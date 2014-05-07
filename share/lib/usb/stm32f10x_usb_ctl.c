@@ -21,7 +21,7 @@ void USB_inData(uint8_t num,USB_buffer_t *buf){
 	len=USB_EP_write(num,buf->data,len,0);
 	buf->data+=len;
 	buf->length-=len;
-	USB_EP_handshake(num,USB_EPR_STAT_TX_VALID|USB_EPR_STAT_RX_STALL);
+	USB_EP_setState(num,USB_EPR_STAT_TX_VALID|USB_EPR_STAT_RX_STALL);
 }
 
 uint16_t USB_outData(uint8_t num,USB_buffer_t *buf){
@@ -36,25 +36,25 @@ void USB_ctl_inStatus(uint8_t num,USB_control_t *control,uint16_t flags){
 	control->done=1;
 	control->stage=USB_CTL_STATUS;
 //	USB->EPR[num]|=USB_EPR_EP_KIND&~USB_EPR_TMASK|USB_EPR_IMASK;
-	USB_EP_handshake(num,flags|USB_EPR_STAT_TX_STALL);
+	USB_EP_setState(num,flags|USB_EPR_STAT_TX_STALL);
 }
 
 void USB_ctl_outStatus(uint8_t num,USB_control_t *control,uint16_t flags){
 	control->done=1;
 	control->stage=USB_CTL_STATUS;
 	USB_getBTABLEEntry(num)->COUNT_TX=0;
-	USB_EP_handshake(num,flags|USB_EPR_STAT_RX_STALL);
+	USB_EP_setState(num,flags|USB_EPR_STAT_RX_STALL);
 }
 
 void USB_ctl_inProto(uint8_t num,USB_control_t *control){
 	control->done=1;
-	uint16_t block_size=USB_EP[num].size_tx;
+	uint16_t block_size=USB_EP_slot[num].size_tx;
 	switch(control->stage){
 	case USB_CTL_SETUP:
 		return;
 	case USB_CTL_STATUS:
 		control->stage=USB_CTL_SETUP;
-		USB_EP_RXHandshake(num,USB_EPR_STAT_RX_VALID);
+		USB_EP_setRXState(num,USB_EPR_STAT_RX_VALID);
 		return;
 	case USB_CTL_LASTDATA:
 		USB_ctl_inStatus(num,control,USB_EPR_STAT_RX_VALID);
@@ -75,14 +75,14 @@ void USB_ctl_outProto(uint8_t num,USB_control_t *control){
 		return;
 	case USB_CTL_STATUS:
 		control->stage=USB_CTL_SETUP;
-		USB_EP_RXHandshake(num,USB_EPR_STAT_RX_VALID);
+		USB_EP_setRXState(num,USB_EPR_STAT_RX_VALID);
 		return;
 	default:{
 		USB_outData(0,&control->databuf);
 		if(control->databuf.length==0){
 			USB_ctl_outStatus(num,control,USB_EPR_STAT_TX_VALID);
 		}else{
-			USB_EP_handshake(num,USB_EPR_STAT_RX_VALID|USB_EPR_STAT_TX_STALL);
+			USB_EP_setState(num,USB_EPR_STAT_RX_VALID|USB_EPR_STAT_TX_STALL);
 		}
 	}
 	}
@@ -106,14 +106,15 @@ void USB_ctl_outData(uint8_t num,USB_control_t *control,uint8_t *data,uint16_t l
 	control->databuf.data=data;
 	control->databuf.length=len;
 	control->stage=USB_CTL_DATA;
-	USB_EP_handshake(num,USB_EPR_STAT_RX_VALID|USB_EPR_STAT_TX_STALL);
+	USB_EP_setState(num,USB_EPR_STAT_RX_VALID|USB_EPR_STAT_TX_STALL);
 }
 
-void USB_ctlInit(){
-	config_num=0;
-	USB_EP_setup(0,USB_EPR_EP_TYPE_CONTROL|USB_EPR_STAT_TX_STALL|USB_EPR_STAT_RX_STALL,
-		USB_MAXPACKETSIZE0,USB_MAXPACKETSIZE0,USB_ctlH);
-	USB_control.stage=USB_CTL_SETUP;
+void USB_ctlInit() {
+	config_num = 0;
+	USB_EP_setup(0, 0,
+		USB_EPR_EP_TYPE_CONTROL | USB_EPR_STAT_TX_STALL | USB_EPR_STAT_RX_STALL,
+		USB_MAXPACKETSIZE0, USB_MAXPACKETSIZE0, USB_ctlH);
+	USB_control.stage = USB_CTL_SETUP;
 }
 
 void USB_ctlH(uint8_t num,USB_event_t evt){
@@ -123,7 +124,7 @@ void USB_ctlH(uint8_t num,USB_event_t evt){
 		USB_control.stage=USB_CTL_STATUS;
 		uint16_t len=USB_EP_toRead(0);
 		if(len!=sizeof(USB_request_t)){
-			USB_EP_handshake(0,USB_EPR_STAT_TX_STALL|USB_EPR_STAT_RX_STALL);
+			USB_EP_setState(0,USB_EPR_STAT_TX_STALL|USB_EPR_STAT_RX_STALL);
 			return;
 		}
 		USB_EP_read(0,(uint8_t*)&USB_control.request,sizeof(USB_request_t),0);
@@ -279,22 +280,22 @@ void USB_LP_Int(){
 	while((istr=USB->ISTR)&USB_ISTR_CTR){
 //		USB->ISTR = ~USB_ISTR_CTR;
 
-		num=istr&USB_ISTR_EP_ID;
+		num = USB_getEPSlotByNum(istr & USB_ISTR_EP_ID);
 
 		val=USB->EPR[num];
 		if(istr&USB_ISTR_DIR){
 			USB->EPR[num]=(val&~(USB_EPR_CTR_RX|USB_EPR_TMASK))|USB_EPR_CTR_TX;
-			if(USB_EP[num].handler){
+			if(USB_EP_slot[num].handler){
 				if (val&USB_EPR_SETUP) {
-					USB_EP[num].handler(num,USB_EVT_SETUP);
+					USB_EP_slot[num].handler(num,USB_EVT_SETUP);
 				}else{
-					USB_EP[num].handler(num,USB_EVT_OUT);
+					USB_EP_slot[num].handler(num,USB_EVT_OUT);
 				}
 			}
 		}else{
 			USB->EPR[num]=(val&~(USB_EPR_CTR_TX|USB_EPR_TMASK))|USB_EPR_CTR_RX;
-			if(USB_EP[num].handler){
-				USB_EP[num].handler(num,USB_EVT_IN);
+			if(USB_EP_slot[num].handler){
+				USB_EP_slot[num].handler(num,USB_EVT_IN);
 			}
 		}
 	}
