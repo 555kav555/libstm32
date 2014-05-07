@@ -905,3 +905,20 @@ void SPI_I2S_ClearITPendingBit(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT)
   */ 
 
 /******************* (C) COPYRIGHT 2010 STMicroelectronics *****END OF FILE****/
+#undef CR1_SPE_Set
+#undef CR1_SPE_Reset
+#undef I2SCFGR_I2SE_Set
+#undef I2SCFGR_I2SE_Reset
+#undef CR1_CRCNext_Set
+#undef CR1_CRCEN_Set
+#undef CR1_CRCEN_Reset
+#undef CR2_SSOE_Set
+#undef CR2_SSOE_Reset
+#undef CR1_CLEAR_Mask
+#undef I2SCFGR_CLEAR_Mask
+#undef SPI_Mode_Select
+#undef I2S_Mode_Select
+#undef I2S2_CLOCK_SRC
+#undef I2S3_CLOCK_SRC
+#undef I2S_MUL_MASK
+#undef I2S_DIV_MASK

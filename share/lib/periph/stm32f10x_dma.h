@@ -406,16 +406,20 @@ typedef struct
   * @{
   */
 
-void DMA_DeInit(DMA_Channel_TypeDef* DMAy_Channelx);
-void DMA_Init(DMA_Channel_TypeDef* DMAy_Channelx, DMA_InitTypeDef* DMA_InitStruct);
-void DMA_StructInit(DMA_InitTypeDef* DMA_InitStruct);
-void DMA_Cmd(DMA_Channel_TypeDef* DMAy_Channelx, FunctionalState NewState);
-void DMA_ITConfig(DMA_Channel_TypeDef* DMAy_Channelx, uint32_t DMA_IT, FunctionalState NewState);
-uint16_t DMA_GetCurrDataCounter(DMA_Channel_TypeDef* DMAy_Channelx);
-FlagStatus DMA_GetFlagStatus(uint32_t DMA_FLAG);
-void DMA_ClearFlag(uint32_t DMA_FLAG);
-ITStatus DMA_GetITStatus(uint32_t DMA_IT);
-void DMA_ClearITPendingBit(uint32_t DMA_IT);
+STM32DRV_API void DMA_DeInit(DMA_Channel_TypeDef* DMAy_Channelx);
+STM32DRV_API void DMA_Init(DMA_Channel_TypeDef* DMAy_Channelx, DMA_InitTypeDef* DMA_InitStruct);
+STM32DRV_API void DMA_StructInit(DMA_InitTypeDef* DMA_InitStruct);
+STM32DRV_API void DMA_Cmd(DMA_Channel_TypeDef* DMAy_Channelx, FunctionalState NewState);
+STM32DRV_API void DMA_ITConfig(DMA_Channel_TypeDef* DMAy_Channelx, uint32_t DMA_IT, FunctionalState NewState);
+STM32DRV_API uint16_t DMA_GetCurrDataCounter(DMA_Channel_TypeDef* DMAy_Channelx);
+STM32DRV_API FlagStatus DMA_GetFlagStatus(uint32_t DMA_FLAG);
+STM32DRV_API void DMA_ClearFlag(uint32_t DMA_FLAG);
+STM32DRV_API ITStatus DMA_GetITStatus(uint32_t DMA_IT);
+STM32DRV_API void DMA_ClearITPendingBit(uint32_t DMA_IT);
+
+#ifdef STM32DRV_INLINE
+  #include "stm32f10x_dma.c"
+#endif
 
 #ifdef __cplusplus
 }

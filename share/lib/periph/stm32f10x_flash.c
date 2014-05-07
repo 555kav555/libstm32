@@ -1733,3 +1733,31 @@ FLASH_Status FLASH_WaitForLastBank2Operation(uint32_t Timeout)
   */
 
 /******************* (C) COPYRIGHT 2010 STMicroelectronics *****END OF FILE****/
+#undef ACR_LATENCY_Mask
+#undef ACR_HLFCYA_Mask
+#undef ACR_PRFTBE_Mask
+#undef ACR_PRFTBS_Mask
+#undef CR_PG_Set
+#undef CR_PG_Reset
+#undef CR_PER_Set
+#undef CR_PER_Reset
+#undef CR_MER_Set
+#undef CR_MER_Reset
+#undef CR_OPTPG_Set
+#undef CR_OPTPG_Reset
+#undef CR_OPTER_Set
+#undef CR_OPTER_Reset
+#undef CR_STRT_Set
+#undef CR_LOCK_Set
+#undef RDPRT_Mask
+#undef WRP0_Mask
+#undef WRP1_Mask
+#undef WRP2_Mask
+#undef WRP3_Mask
+#undef OB_USER_BFB2
+#undef RDP_Key
+#undef FLASH_KEY1
+#undef FLASH_KEY2
+#undef FLASH_BANK1_END_ADDRESS
+#undef EraseTimeout
+#undef ProgramTimeout

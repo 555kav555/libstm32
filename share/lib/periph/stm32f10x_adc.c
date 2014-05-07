@@ -1304,3 +1304,44 @@ void ADC_ClearITPendingBit(ADC_TypeDef* ADCx, uint16_t ADC_IT)
   */
 
 /******************* (C) COPYRIGHT 2010 STMicroelectronics *****END OF FILE****/
+#undef CR1_DISCNUM_Reset
+#undef CR1_DISCEN_Set
+#undef CR1_DISCEN_Reset
+#undef CR1_JAUTO_Set
+#undef CR1_JAUTO_Reset
+#undef CR1_JDISCEN_Set
+#undef CR1_JDISCEN_Reset
+#undef CR1_AWDCH_Reset
+#undef CR1_AWDMode_Reset
+#undef CR1_CLEAR_Mask
+#undef CR2_ADON_Set
+#undef CR2_ADON_Reset
+#undef CR2_DMA_Set
+#undef CR2_DMA_Reset
+#undef CR2_RSTCAL_Set
+#undef CR2_CAL_Set
+#undef CR2_SWSTART_Set
+#undef CR2_EXTTRIG_Set
+#undef CR2_EXTTRIG_Reset
+#undef CR2_EXTTRIG_SWSTART_Set
+#undef CR2_EXTTRIG_SWSTART_Reset
+#undef CR2_JEXTSEL_Reset
+#undef CR2_JEXTTRIG_Set
+#undef CR2_JEXTTRIG_Reset
+#undef CR2_JSWSTART_Set
+#undef CR2_JEXTTRIG_JSWSTART_Set
+#undef CR2_JEXTTRIG_JSWSTART_Reset
+#undef CR2_TSVREFE_Set
+#undef CR2_TSVREFE_Reset
+#undef CR2_CLEAR_Mask
+#undef SQR3_SQ_Set
+#undef SQR2_SQ_Set
+#undef SQR1_SQ_Set
+#undef SQR1_CLEAR_Mask
+#undef JSQR_JSQ_Set
+#undef JSQR_JL_Set
+#undef JSQR_JL_Reset
+#undef SMPR1_SMP_Set
+#undef SMPR2_SMP_Set
+#undef JDR_Offset
+#undef DR_ADDRESS

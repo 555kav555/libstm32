@@ -446,29 +446,33 @@ typedef struct
   * @{
   */
 
-void SPI_I2S_DeInit(SPI_TypeDef* SPIx);
-void SPI_Init(SPI_TypeDef* SPIx, SPI_InitTypeDef* SPI_InitStruct);
-void I2S_Init(SPI_TypeDef* SPIx, I2S_InitTypeDef* I2S_InitStruct);
-void SPI_StructInit(SPI_InitTypeDef* SPI_InitStruct);
-void I2S_StructInit(I2S_InitTypeDef* I2S_InitStruct);
-void SPI_Cmd(SPI_TypeDef* SPIx, FunctionalState NewState);
-void I2S_Cmd(SPI_TypeDef* SPIx, FunctionalState NewState);
-void SPI_I2S_ITConfig(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT, FunctionalState NewState);
-void SPI_I2S_DMACmd(SPI_TypeDef* SPIx, uint16_t SPI_I2S_DMAReq, FunctionalState NewState);
-void SPI_I2S_SendData(SPI_TypeDef* SPIx, uint16_t Data);
-uint16_t SPI_I2S_ReceiveData(SPI_TypeDef* SPIx);
-void SPI_NSSInternalSoftwareConfig(SPI_TypeDef* SPIx, uint16_t SPI_NSSInternalSoft);
-void SPI_SSOutputCmd(SPI_TypeDef* SPIx, FunctionalState NewState);
-void SPI_DataSizeConfig(SPI_TypeDef* SPIx, uint16_t SPI_DataSize);
-void SPI_TransmitCRC(SPI_TypeDef* SPIx);
-void SPI_CalculateCRC(SPI_TypeDef* SPIx, FunctionalState NewState);
-uint16_t SPI_GetCRC(SPI_TypeDef* SPIx, uint8_t SPI_CRC);
-uint16_t SPI_GetCRCPolynomial(SPI_TypeDef* SPIx);
-void SPI_BiDirectionalLineConfig(SPI_TypeDef* SPIx, uint16_t SPI_Direction);
-FlagStatus SPI_I2S_GetFlagStatus(SPI_TypeDef* SPIx, uint16_t SPI_I2S_FLAG);
-void SPI_I2S_ClearFlag(SPI_TypeDef* SPIx, uint16_t SPI_I2S_FLAG);
-ITStatus SPI_I2S_GetITStatus(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT);
-void SPI_I2S_ClearITPendingBit(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT);
+STM32DRV_API void SPI_I2S_DeInit(SPI_TypeDef* SPIx);
+STM32DRV_API void SPI_Init(SPI_TypeDef* SPIx, SPI_InitTypeDef* SPI_InitStruct);
+STM32DRV_API void I2S_Init(SPI_TypeDef* SPIx, I2S_InitTypeDef* I2S_InitStruct);
+STM32DRV_API void SPI_StructInit(SPI_InitTypeDef* SPI_InitStruct);
+STM32DRV_API void I2S_StructInit(I2S_InitTypeDef* I2S_InitStruct);
+STM32DRV_API void SPI_Cmd(SPI_TypeDef* SPIx, FunctionalState NewState);
+STM32DRV_API void I2S_Cmd(SPI_TypeDef* SPIx, FunctionalState NewState);
+STM32DRV_API void SPI_I2S_ITConfig(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT, FunctionalState NewState);
+STM32DRV_API void SPI_I2S_DMACmd(SPI_TypeDef* SPIx, uint16_t SPI_I2S_DMAReq, FunctionalState NewState);
+STM32DRV_API void SPI_I2S_SendData(SPI_TypeDef* SPIx, uint16_t Data);
+STM32DRV_API uint16_t SPI_I2S_ReceiveData(SPI_TypeDef* SPIx);
+STM32DRV_API void SPI_NSSInternalSoftwareConfig(SPI_TypeDef* SPIx, uint16_t SPI_NSSInternalSoft);
+STM32DRV_API void SPI_SSOutputCmd(SPI_TypeDef* SPIx, FunctionalState NewState);
+STM32DRV_API void SPI_DataSizeConfig(SPI_TypeDef* SPIx, uint16_t SPI_DataSize);
+STM32DRV_API void SPI_TransmitCRC(SPI_TypeDef* SPIx);
+STM32DRV_API void SPI_CalculateCRC(SPI_TypeDef* SPIx, FunctionalState NewState);
+STM32DRV_API uint16_t SPI_GetCRC(SPI_TypeDef* SPIx, uint8_t SPI_CRC);
+STM32DRV_API uint16_t SPI_GetCRCPolynomial(SPI_TypeDef* SPIx);
+STM32DRV_API void SPI_BiDirectionalLineConfig(SPI_TypeDef* SPIx, uint16_t SPI_Direction);
+STM32DRV_API FlagStatus SPI_I2S_GetFlagStatus(SPI_TypeDef* SPIx, uint16_t SPI_I2S_FLAG);
+STM32DRV_API void SPI_I2S_ClearFlag(SPI_TypeDef* SPIx, uint16_t SPI_I2S_FLAG);
+STM32DRV_API ITStatus SPI_I2S_GetITStatus(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT);
+STM32DRV_API void SPI_I2S_ClearITPendingBit(SPI_TypeDef* SPIx, uint8_t SPI_I2S_IT);
+
+#ifdef STM32DRV_INLINE
+  #include "stm32f10x_spi.c"
+#endif
 
 #ifdef __cplusplus
 }

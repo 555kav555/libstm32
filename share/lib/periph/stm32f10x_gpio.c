@@ -640,3 +640,16 @@ void GPIO_ETH_MediaInterfaceConfig(uint32_t GPIO_ETH_MediaInterface)
   */
 
 /******************* (C) COPYRIGHT 2010 STMicroelectronics *****END OF FILE****/
+#undef AFIO_OFFSET
+#undef EVCR_OFFSET
+#undef EVOE_BitNumber
+#undef EVCR_EVOE_BB
+#undef MAPR_OFFSET
+#undef MII_RMII_SEL_BitNumber
+#undef MAPR_MII_RMII_SEL_BB
+#undef EVCR_PORTPINCONFIG_MASK
+#undef LSB_MASK
+#undef DBGAFR_POSITION_MASK
+#undef DBGAFR_SWJCFG_MASK
+#undef DBGAFR_LOCATION_MASK
+#undef DBGAFR_NUMBITS_MASK

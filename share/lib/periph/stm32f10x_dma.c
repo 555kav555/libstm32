@@ -691,3 +691,19 @@ void DMA_ClearITPendingBit(uint32_t DMA_IT)
   */
 
 /******************* (C) COPYRIGHT 2010 STMicroelectronics *****END OF FILE****/
+#undef CCR_ENABLE_Set
+#undef CCR_ENABLE_Reset
+#undef DMA1_Channel1_IT_Mask
+#undef DMA1_Channel2_IT_Mask
+#undef DMA1_Channel3_IT_Mask
+#undef DMA1_Channel4_IT_Mask
+#undef DMA1_Channel5_IT_Mask
+#undef DMA1_Channel6_IT_Mask
+#undef DMA1_Channel7_IT_Mask
+#undef DMA2_Channel1_IT_Mask
+#undef DMA2_Channel2_IT_Mask
+#undef DMA2_Channel3_IT_Mask
+#undef DMA2_Channel4_IT_Mask
+#undef DMA2_Channel5_IT_Mask
+#undef FLAG_Mask
+#undef CCR_CLEAR_Mask

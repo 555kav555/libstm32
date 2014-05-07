@@ -2832,3 +2832,7 @@ static void TI4_Config(TIM_TypeDef* TIMx, uint16_t TIM_ICPolarity, uint16_t TIM_
   */
 
 /******************* (C) COPYRIGHT 2010 STMicroelectronics *****END OF FILE****/
+#undef SMCR_ETR_Mask
+#undef CCMR_Offset
+#undef CCER_CCE_Set
+#undef CCER_CCNE_Set
