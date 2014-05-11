@@ -281,6 +281,11 @@ void USB_LP_Int(){
 //		USB->ISTR = ~USB_ISTR_CTR;
 
 		num = USB_getEPSlotByNum(istr & USB_ISTR_EP_ID);
+		if(num >= USB_EP_SLOT_NUM) {
+			// something goes totally wrong, bailing out
+			NVIC_SystemReset();
+			while(1);
+		}
 
 		val=USB->EPR[num];
 		if(istr&USB_ISTR_DIR){
