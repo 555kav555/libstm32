@@ -153,13 +153,13 @@ void USB_resume() {
 static void USB_EP_clear(uint8_t num) {
 	USB_EP_setState(num, USB_EPR_STAT_TX_DISABLED | USB_EPR_STAT_RX_DISABLED);
 	USB_EP_slot[num].handler = NULL;
-	USB_EP_slotNum[USB_getEPNumBySlot(num)] = USB_EP_FREESLOT;
 }
 
 void USB_EP_clearAll() {
 	int i;
 	for(i = 1; i < USB_EP_SLOT_NUM; ++i) USB_EP_clear(i);
 	PMA_alloc_ptr = (sizeof(USB_BTABLE_entry_t) >> 1) * USB_EP_SLOT_NUM + USB_EP_slot[0].size_tx + USB_EP_slot[0].size_rx;
+	for(i = 1; i < 16; ++i) USB_EP_slotNum[i] = USB_EP_FREESLOT;
 }
 
 void USB_EP_setup(uint8_t num, uint8_t ep_num, uint16_t flags, uint16_t size_tx, uint16_t size_rx, USB_EP_H_t handler) {
