@@ -8,6 +8,7 @@ void USB_HID_controlRequestHandler(){
 			case USB_REQUEST_GET_DESCRIPTOR:{
 				switch(USB_control.request.wValue.H){
 				case USB_HID_REPORT_DESCRIPTOR_TYPE:
+					if(USB_control.request.wValue.L >= USB_DESCRIPTOR_NUM) break;
 					USB_ctl_inDataBuf(0,&USB_control,
 						USB_descriptorTable[USB_HID_REPORT_DESCRIPTOR_TABLE]
 						[USB_control.request.wValue.L]);

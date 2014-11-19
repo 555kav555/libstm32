@@ -1,6 +1,10 @@
 #include "stm32f10x_usb.h"
 
-USB_buffer_t USB_descriptorTable[USB_DESCRIPTOR_TABLE_NUM][USB_DESCRIPTOR_NUM];
+USB_buffer_t USB_descriptorTable[USB_DESCRIPTOR_TABLE_NUM][USB_DESCRIPTOR_NUM] = {
+	[0 ... USB_DESCRIPTOR_TABLE_NUM - 1] = {
+		[0 ... USB_DESCRIPTOR_NUM - 1] = {0, 0}
+	}
+};
 
 USB_control_t USB_control;
 
@@ -10,11 +14,6 @@ USB_onControlRequest_t USB_onControlRequest[USB_ON_CONTROL_REQUEST_NUM]={[0 ... 
 
 static const uint8_t zeroes[]={0,0,0,0,0,0,0,0};
 static const uint16_t dev_status=1;
-
-void USB_setDescriptor(uint8_t type,uint8_t slot,const uint8_t *data,uint16_t len){
-	USB_descriptorTable[type][slot].data=(uint8_t*)data;
-	USB_descriptorTable[type][slot].length=len;
-}
 
 void USB_inData(uint8_t num,USB_buffer_t *buf){
 	uint16_t len=buf->length;
@@ -54,7 +53,7 @@ void USB_ctl_inProto(uint8_t num,USB_control_t *control){
 		return;
 	case USB_CTL_STATUS:
 		control->stage=USB_CTL_SETUP;
-		USB_EP_setRXState(num,USB_EPR_STAT_RX_VALID);
+		USB_EP_setRXState(num,USB_EPR_STAT_RX_STALL);
 		return;
 	case USB_CTL_LASTDATA:
 		USB_ctl_inStatus(num,control,USB_EPR_STAT_RX_VALID);
@@ -75,12 +74,17 @@ void USB_ctl_outProto(uint8_t num,USB_control_t *control){
 		return;
 	case USB_CTL_STATUS:
 		control->stage=USB_CTL_SETUP;
-		USB_EP_setRXState(num,USB_EPR_STAT_RX_VALID);
+		USB_EP_setRXState(num,USB_EPR_STAT_RX_STALL);
 		return;
 	default:{
 		USB_outData(0,&control->databuf);
 		if(control->databuf.length==0){
-			USB_ctl_outStatus(num,control,USB_EPR_STAT_TX_VALID);
+			if(control->onData){
+				control->onData();
+				control->onData=NULL;
+			}else{
+				USB_ctl_outStatus(num,control,USB_EPR_STAT_TX_VALID);
+			}
 		}else{
 			USB_EP_setState(num,USB_EPR_STAT_RX_VALID|USB_EPR_STAT_TX_STALL);
 		}
@@ -115,19 +119,25 @@ void USB_ctlInit() {
 		USB_EPR_EP_TYPE_CONTROL | USB_EPR_STAT_TX_STALL | USB_EPR_STAT_RX_STALL,
 		USB_MAXPACKETSIZE0, USB_MAXPACKETSIZE0, USB_ctlH);
 	USB_control.stage = USB_CTL_SETUP;
+	USB_control.onData = NULL;
 }
 
 void USB_ctlH(uint8_t num,USB_event_t evt){
 	USB_control.done=0;
 	switch(evt){
 	case USB_EVT_SETUP:{
-		USB_control.stage=USB_CTL_STATUS;
 		uint16_t len=USB_EP_toRead(0);
 		if(len!=sizeof(USB_request_t)){
 			USB_EP_setState(0,USB_EPR_STAT_TX_STALL|USB_EPR_STAT_RX_STALL);
 			return;
 		}
 		USB_EP_read(0,(uint8_t*)&USB_control.request,sizeof(USB_request_t),0);
+		int i;
+		for(i=0;i<USB_ON_CONTROL_REQUEST_NUM;++i){
+			if(USB_onControlRequest[i])USB_onControlRequest[i]();
+//			else break;
+			if(USB_control.done)return;
+		}
 		switch(USB_control.request.bmRequestType.Type){
 		case USB_REQUEST_TYPE_STANDARD:{
 			if(USB_control.request.bmRequestType.Dir){
@@ -142,17 +152,19 @@ void USB_ctlH(uint8_t num,USB_event_t evt){
 				case USB_REQUEST_GET_DESCRIPTOR:{
 					switch(USB_control.request.wValue.H){
 					case USB_DEVICE_DESCRIPTOR_TYPE:
-						USB_ctl_inDataBuf(0,&USB_control,
+						USB_ctl_inDataBuf(0, &USB_control,
 							USB_descriptorTable[USB_DEVICE_DESCRIPTOR_TABLE]
 							[0]);
 						break;
 					case USB_CONFIGURATION_DESCRIPTOR_TYPE:
-						USB_ctl_inDataBuf(0,&USB_control,
+						if(USB_control.request.wValue.L >= USB_DESCRIPTOR_NUM) break;
+						USB_ctl_inDataBuf(0, &USB_control,
 							USB_descriptorTable[USB_CONFIGURATION_DESCRIPTOR_TABLE]
 							[USB_control.request.wValue.L]);
 						break;
 					case USB_STRING_DESCRIPTOR_TYPE:
-						USB_ctl_inDataBuf(0,&USB_control,
+						if(USB_control.request.wValue.L >= USB_DESCRIPTOR_NUM) break;
+						USB_ctl_inDataBuf(0, &USB_control,
 							USB_descriptorTable[USB_STRING_DESCRIPTOR_TABLE]
 							[USB_control.request.wValue.L]);
 						break;
@@ -193,12 +205,6 @@ void USB_ctlH(uint8_t num,USB_event_t evt){
 			break;
 		}
 		if(USB_control.done)return;
-		int i;
-		for(i=0;i<USB_ON_CONTROL_REQUEST_NUM;++i){
-			if(USB_onControlRequest[i])USB_onControlRequest[i]();
-//			else break;
-			if(USB_control.done)return;
-		}
 		if(USB_control.request.bmRequestType.Dir){
 			USB_ctl_inStatus(0,&USB_control,USB_EPR_STAT_RX_STALL);
 		}else{
@@ -206,7 +212,7 @@ void USB_ctlH(uint8_t num,USB_event_t evt){
 		}
 	}break;
 	case USB_EVT_IN:
-		if(USB_control.stage==USB_CTL_STATUS && USB_control.request.wRequestPattern==USB_REQUEST_PAT_SET_ADDRESS){
+		if((USB_control.stage==USB_CTL_STATUS) && (USB_control.request.wRequestPattern==USB_REQUEST_PAT_SET_ADDRESS)){
 			USB->DADDR=USB_control.request.wValue.L|USB_DADDR_EF;
 		}
 		USB_ctl_inProto(0,&USB_control);
