@@ -3,7 +3,7 @@
 uint32_t USB_clock = RCC_USBCLKSource_PLLCLK_1Div5;
 
 uint8_t USB_EP_slotNum[16] = { [0 ... 15] = USB_EP_FREESLOT };
-USB_EP_slot_t USB_EP_slot[USB_EP_SLOT_NUM] = { [0 ... USB_EP_SLOT_NUM - 1] = {NULL, 0, 0} };
+USB_EP_slot_t USB_EP_slot[USB_EP_SLOT_NUM] = { [0 ... USB_EP_SLOT_NUM - 1] = {NULL, {0}, 0, 0} };
 
 static uint16_t PMA_alloc_ptr = 0;
 
@@ -54,6 +54,52 @@ static void PMAToUserBufferCopy(uint8_t *to,uint16_t fromPMA,uint16_t len){
 	}
 }
 
+#ifdef USB_DOUBLEBUFFER
+
+uint16_t USB_EP_toRead(uint8_t num) {
+	USB_BTABLE_entry_t *e = USB_getBTABLEEntry(num);
+	return ((USB_EP_slot[num].db && (USB->EPR[num] & USB_EPR_DTOG_RX)) ? e->COUNT_TX : e->COUNT_RX) & USB_BTABLE_COUNT_RX_COUNTM;
+}
+
+uint16_t USB_EP_read(uint8_t num, uint8_t *buf, uint16_t len, uint16_t offset) {
+	USB_BTABLE_entry_t *e = USB_getBTABLEEntry(num);
+	uint16_t epBAddr, epBCount;
+	if(USB_EP_slot[num].db && (USB->EPR[num] & USB_EPR_DTOG_RX)) {
+		epBAddr = e->ADDR_TX; epBCount = e->COUNT_TX;
+	} else {
+		epBAddr = e->ADDR_RX; epBCount = e->COUNT_RX;
+	}
+	uint16_t l = (epBCount & USB_BTABLE_COUNT_RX_COUNTM) - offset;
+	if(l > len) l = len;
+	PMAToUserBufferCopy(buf, epBAddr + offset, l);
+	return l;
+}
+
+uint16_t USB_EP_write(uint8_t num, const uint8_t *buf, uint16_t len, uint16_t offset) {
+	USB_BTABLE_entry_t *e = USB_getBTABLEEntry(num);
+	uint16_t l = USB_EP_slot[num].size_tx - offset; // Ok for double buffering
+	if(l > len) l = len;
+	if(USB_EP_slot[num].db && !(USB->EPR[num] & USB_EPR_DTOG_RX)) {
+		UserToPMABufferCopy(buf, e->ADDR_RX + offset, l);
+		e->COUNT_RX = l + offset;
+	} else {
+		UserToPMABufferCopy(buf, e->ADDR_TX + offset, l);
+		e->COUNT_TX = l + offset;
+	}
+	return l;
+}
+
+void USB_EP_writeEmpty(uint8_t num){
+	USB_BTABLE_entry_t *e = USB_getBTABLEEntry(num);
+	if(USB_EP_slot[num].db && !(USB->EPR[num] & USB_EPR_DTOG_RX)) {
+		e->COUNT_RX = 0;
+	} else {
+		e->COUNT_TX = 0;
+	}
+}
+
+#else
+
 uint16_t USB_EP_toRead(uint8_t num) {
 	USB_BTABLE_entry_t *e = USB_getBTABLEEntry(num);
 	return e->COUNT_RX & USB_BTABLE_COUNT_RX_COUNTM;
@@ -80,6 +126,8 @@ void USB_EP_writeEmpty(uint8_t num){
 	USB_BTABLE_entry_t *e = USB_getBTABLEEntry(num);
 	e->COUNT_TX = 0;
 }
+
+#endif
 
 void USB_deInit() {
 	USB_connect(0);
@@ -170,16 +218,48 @@ void USB_EP_setup(uint8_t num, uint8_t ep_num, uint16_t flags, uint16_t size_tx,
 	PMA_alloc_ptr += ((size_tx + 1) >> 1) << 1;
 	e->ADDR_RX = PMA_alloc_ptr;
 	PMA_alloc_ptr += ((size_rx + 1) >> 1) << 1;
+	e->COUNT_TX = 0;
 	if(size_rx > 62) {
 		e->COUNT_RX = ((size_rx - 1) << 5) | 0x8000;
 	} else {
 		e->COUNT_RX = size_rx << 9;
 	}
+#ifdef USB_DOUBLEBUFFER
+	USB_EP_slot[num].db = 0;
+#endif
 	USB_EP_slot[num].size_tx = size_tx;
 	USB_EP_slot[num].size_rx = size_rx;
 	USB_EP_slot[num].handler = handler;
 	USB_EP_setState(num, flags & USB_EPR_TMASK);
 }
+
+#ifdef USB_DOUBLEBUFFER
+
+void USB_EP_setup_db(uint8_t num, uint8_t ep_num, uint16_t flags, uint16_t size, USB_EP_H_t handler) {
+	USB_EP_slotNum[ep_num & 0x0F] = num;
+	USB->EPR[num] = flags | (ep_num & ~USB_EPR_TMASK) | ((flags & USB_EPR_EP_TYPE_BULK) ? USB_EPR_EP_KIND : 0);
+	USB_BTABLE_entry_t *e = USB_getBTABLEEntry(num);
+	e->ADDR_TX = PMA_alloc_ptr;
+	PMA_alloc_ptr += ((size + 1) >> 1) << 1;
+	e->ADDR_RX = PMA_alloc_ptr;
+	PMA_alloc_ptr += ((size + 1) >> 1) << 1;
+	if(flags & USB_EPR_STAT_RX_VALID) {
+		uint16_t v;
+		if(size > 62) {
+			v = ((size - 1) << 5) | 0x8000;
+		} else {
+			v = size << 9;
+		}
+		e->COUNT_TX = v;
+		e->COUNT_RX = v;
+	}
+	USB_EP_slot[num].db = 1;
+	USB_EP_slot[num].size = size;
+	USB_EP_slot[num].handler = handler;
+	USB_EP_setState(num, flags & USB_EPR_TMASK);
+}
+
+#endif
 
 void USB_EP_setRXState(uint8_t num, uint16_t flags) {
 	USB->EPR[num] = ((USB->EPR[num] ^ flags) & (USB_EPR_STAT_RX_0 | USB_EPR_STAT_RX_1 | ~USB_EPR_TMASK)) | USB_EPR_CTR_TX | USB_EPR_CTR_RX;

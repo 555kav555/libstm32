@@ -116,11 +116,27 @@ typedef struct {
 
 typedef void(*USB_EP_H_t)(uint8_t ep_slot, USB_event_t evt);
 
+#ifdef USB_DOUBLEBUFFER
+
+typedef struct {
+	USB_EP_H_t handler;
+	union {
+		uint16_t size_tx;
+		uint16_t size; // double buffered mode
+	};
+	uint16_t size_rx : 15;
+	uint16_t db : 1; // double buffered mode flag
+} USB_EP_slot_t;
+
+#else
+
 typedef struct {
 	USB_EP_H_t handler;
 	uint16_t size_tx;
 	uint16_t size_rx;
 } USB_EP_slot_t;
+
+#endif
 
 typedef enum {
 	USB_CTL_SETUP,
@@ -186,6 +202,16 @@ void USB_EP_setState(uint8_t ep_slot, uint16_t flags);
 uint16_t USB_EP_getTXState(uint8_t ep_slot);
 uint16_t USB_EP_getRXState(uint8_t ep_slot);
 
+static inline void USB_EP_setTXDone(uint8_t ep_slot) {
+	if(!USB_EP_slot[ep_slot].db) USB_EP_setTXState(ep_slot, USB_EPR_STAT_TX_VALID);
+	// <TODO> Double buffered bulk endpoints
+}
+
+static inline void USB_EP_setRXDone(uint8_t ep_slot) {
+	if(!USB_EP_slot[ep_slot].db) USB_EP_setRXState(ep_slot, USB_EPR_STAT_RX_VALID);
+	// <TODO> Double buffered bulk endpoints
+}
+
 
 void USB_reset();
 void USB_suspend();
@@ -214,23 +240,32 @@ static inline void USB_ctl_inDataWait(uint8_t num, USB_control_t *control) {
 #define USB_ctl_outDataBuf(A,B,C) USB_ctl_outData((A),(B),(C).data,(C).length)
 
 static inline void USB_CAN_intDeInit() {
-	NVIC_InitTypeDef NVIC_InitStructure;
-	NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
-	NVIC_Init(&NVIC_InitStructure);
+	NVIC_InitTypeDef cfg;
+	cfg.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
+	cfg.NVIC_IRQChannelCmd = DISABLE;
+	NVIC_Init(&cfg);
+	cfg.NVIC_IRQChannel = USB_HP_CAN1_TX_IRQn;
+	cfg.NVIC_IRQChannelCmd = DISABLE;
+	NVIC_Init(&cfg);
 }
 
 static inline void USB_CAN_intInit(int pPri, int sPri) {
-	NVIC_InitTypeDef NVIC_InitStructure;
-	NVIC_InitStructure.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = pPri;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = sPri;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
+	NVIC_InitTypeDef cfg;
+	cfg.NVIC_IRQChannel = USB_LP_CAN1_RX0_IRQn;
+	cfg.NVIC_IRQChannelPreemptionPriority = pPri;
+	cfg.NVIC_IRQChannelSubPriority = sPri;
+	cfg.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&cfg);
+	cfg.NVIC_IRQChannel = USB_HP_CAN1_TX_IRQn;
+	cfg.NVIC_IRQChannelPreemptionPriority = pPri;
+	cfg.NVIC_IRQChannelSubPriority = sPri;
+	cfg.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&cfg);
 }
 
 void USB_init();
 void USB_LP_Int();
+#define USB_HP_Int USB_LP_Int
 void USB_connect(bool);
 
 static inline void USB_clearDescriptors() {
@@ -243,6 +278,9 @@ static inline void USB_setDescriptor(uint8_t type, uint8_t slot, const uint8_t *
 }
 
 void USB_EP_setup(uint8_t ep_slot, uint8_t ep_num, uint16_t flags, uint16_t size_tx, uint16_t size_rx, USB_EP_H_t handler);
+#ifdef USB_DOUBLEBUFFER
+void USB_EP_setup_db(uint8_t ep_slot, uint8_t ep_num, uint16_t flags, uint16_t size, USB_EP_H_t handler);
+#endif
 void USB_EP_clearAll();
 extern USB_onConfig_t USB_onConfig;
 #define USB_ON_CONTROL_REQUEST_NUM 4
