@@ -203,12 +203,18 @@ uint16_t USB_EP_getTXState(uint8_t ep_slot);
 uint16_t USB_EP_getRXState(uint8_t ep_slot);
 
 static inline void USB_EP_setTXDone(uint8_t ep_slot) {
-	if(!USB_EP_slot[ep_slot].db) USB_EP_setTXState(ep_slot, USB_EPR_STAT_TX_VALID);
+#ifdef USB_DOUBLEBUFFER
+	if(!USB_EP_slot[ep_slot].db)
+#endif
+		USB_EP_setTXState(ep_slot, USB_EPR_STAT_TX_VALID);
 	// <TODO> Double buffered bulk endpoints
 }
 
 static inline void USB_EP_setRXDone(uint8_t ep_slot) {
-	if(!USB_EP_slot[ep_slot].db) USB_EP_setRXState(ep_slot, USB_EPR_STAT_RX_VALID);
+#ifdef USB_DOUBLEBUFFER
+	if(!USB_EP_slot[ep_slot].db)
+#endif
+		USB_EP_setRXState(ep_slot, USB_EPR_STAT_RX_VALID);
 	// <TODO> Double buffered bulk endpoints
 }
 

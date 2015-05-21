@@ -3,7 +3,13 @@
 uint32_t USB_clock = RCC_USBCLKSource_PLLCLK_1Div5;
 
 uint8_t USB_EP_slotNum[16] = { [0 ... 15] = USB_EP_FREESLOT };
-USB_EP_slot_t USB_EP_slot[USB_EP_SLOT_NUM] = { [0 ... USB_EP_SLOT_NUM - 1] = {NULL, {0}, 0, 0} };
+USB_EP_slot_t USB_EP_slot[USB_EP_SLOT_NUM] = { [0 ... USB_EP_SLOT_NUM - 1] = {
+	NULL,
+#ifdef USB_DOUBLEBUFFER
+	{0},
+#endif
+	0, 0
+} };
 
 static uint16_t PMA_alloc_ptr = 0;
 
