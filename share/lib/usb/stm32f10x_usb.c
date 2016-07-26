@@ -14,7 +14,7 @@ USB_EP_slot_t USB_EP_slot[USB_EP_SLOT_NUM] = { [0 ... USB_EP_SLOT_NUM - 1] = {
 static uint16_t PMA_alloc_ptr = 0;
 
 USB_BTABLE_entry_t* USB_getBTABLEEntry(uint8_t num) {
-	return (USB_BTABLE_entry_t*)(((uint8_t*)USB_PMAAddr) + (USB->BTABLE + (num * 8)) * 2);
+	return (USB_BTABLE_entry_t*)(((uint8_t*)USB_PMAAddr) + ((USB->BTABLE + (num << 3)) << 1));
 }
 
 static void UserToPMABufferCopy(const uint8_t *from,uint16_t toPMA,uint16_t len){
@@ -268,18 +268,18 @@ void USB_EP_setup_db(uint8_t num, uint8_t ep_num, uint16_t flags, uint16_t size,
 #endif
 
 void USB_EP_setRXState(uint8_t num, uint16_t flags) {
-	USB->EPR[num] = ((USB->EPR[num] ^ flags) & (USB_EPR_STAT_RX_0 | USB_EPR_STAT_RX_1 | ~USB_EPR_TMASK)) | USB_EPR_CTR_TX | USB_EPR_CTR_RX;
+	USB->EPR[num] = ((USB->EPR[num] ^ flags) & (USB_EPR_STAT_RX_0 | USB_EPR_STAT_RX_1 | ~USB_EPR_TMASK)) | (USB_EPR_CTR_TX | USB_EPR_CTR_RX);
 }
 
 void USB_EP_setTXState(uint8_t num, uint16_t flags) {
-	USB->EPR[num] = ((USB->EPR[num] ^ flags) & (USB_EPR_STAT_TX_0 | USB_EPR_STAT_TX_1 | ~USB_EPR_TMASK)) | USB_EPR_CTR_TX | USB_EPR_CTR_RX;
+	USB->EPR[num] = ((USB->EPR[num] ^ flags) & (USB_EPR_STAT_TX_0 | USB_EPR_STAT_TX_1 | ~USB_EPR_TMASK)) | (USB_EPR_CTR_TX | USB_EPR_CTR_RX);
 }
 
 void USB_EP_setState(uint8_t num, uint16_t flags) {
 	USB->EPR[num] = ((USB->EPR[num] ^ flags) &
 		(USB_EPR_STAT_TX_0 | USB_EPR_STAT_TX_1 |
 		USB_EPR_STAT_RX_0 | USB_EPR_STAT_RX_1 |
-		~USB_EPR_TMASK)) | USB_EPR_CTR_TX | USB_EPR_CTR_RX;
+		~USB_EPR_TMASK)) | (USB_EPR_CTR_TX | USB_EPR_CTR_RX);
 }
 
 uint16_t USB_EP_getRXState(uint8_t num) {
