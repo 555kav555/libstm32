@@ -157,8 +157,6 @@ typedef struct {
 	bool done;
 } USB_control_t;
 
-extern uint32_t USB_clock;
-
 extern USB_control_t USB_control;
 
 #define USB_CONTROL_PIPE 0,USB_control
