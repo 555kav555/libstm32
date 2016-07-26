@@ -15,7 +15,7 @@ USB_onControlRequest_t USB_onControlRequest[USB_ON_CONTROL_REQUEST_NUM]={[0 ... 
 static const uint8_t zeroes[]={0,0,0,0,0,0,0,0};
 static const uint16_t dev_status=1;
 
-void USB_inData(uint8_t num,USB_buffer_t *buf){
+static void USB_inData(uint8_t num,USB_buffer_t *buf){
 	uint16_t len=buf->length;
 	len=USB_EP_write(num,buf->data,len,0);
 	buf->data+=len;
@@ -23,7 +23,7 @@ void USB_inData(uint8_t num,USB_buffer_t *buf){
 	USB_EP_setState(num,USB_EPR_STAT_TX_VALID|USB_EPR_STAT_RX_STALL);
 }
 
-uint16_t USB_outData(uint8_t num,USB_buffer_t *buf){
+static uint16_t USB_outData(uint8_t num,USB_buffer_t *buf){
 	uint16_t len=buf->length;
 	len=USB_EP_read(num,buf->data,len,0);
 	buf->data+=len;
@@ -64,7 +64,7 @@ void USB_ctl_inProto(uint8_t num,USB_control_t *control){
 	default:
 		if(block_size>control->databuf.length)control->stage=USB_CTL_LASTDATA;
 	}
-	USB_inData(0,&control->databuf);
+	USB_inData(num,&control->databuf);
 }
 
 void USB_ctl_outProto(uint8_t num,USB_control_t *control){
@@ -77,7 +77,7 @@ void USB_ctl_outProto(uint8_t num,USB_control_t *control){
 		USB_EP_setRXState(num,USB_EPR_STAT_RX_STALL);
 		return;
 	default:{
-		USB_outData(0,&control->databuf);
+		USB_outData(num,&control->databuf);
 		if(control->databuf.length==0){
 			if(control->onData){
 				control->onData();
