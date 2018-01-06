@@ -21,6 +21,10 @@
 #define WORD |2,
 #define DWORD |3,
 
+#define VAL1(V) |1, (V)
+#define VAL2(V) |2, (V) & 0xFF, (V) >> 8
+#define VAL4(V) |3, (V) & 0xFF, ((V) >> 8) & 0xFF, ((V) >> 16) & 0xFF, (V) >> 24
+
 #define PHYSICAL |1,0x00
 #define APPLICATION |1,0x01
 #define LOGICAL |1,0x02
